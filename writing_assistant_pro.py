@@ -414,49 +414,47 @@ def main():
             st.session_state.generated_content = content
 
     # 显示生成的内容
-    if st.session_state.generated_content is not None:
+    if st.session_state.generated_content:
         st.subheader(f"🎯 {platform}风格内容预览")
 
-        # 创建文本区域
+        # 显示内容并允许编辑
         edited_content = st.text_area(
-            "内容预览",
+            "内容预览（编辑后点击下方按钮复制）",
             value=st.session_state.generated_content,
             height=400,
             key="content_area"
         )
 
-        # 添加复制按钮
-        copy_btn = st.button(
-            "📋 一键复制内容",
-            key="copy_btn",
-            use_container_width=True,
-            help="点击复制内容到剪贴板",
-            type="secondary"
-        )
+        # 更新编辑后的内容
+        st.session_state.generated_content = edited_content
 
-        # 复制功能实现
-        if copy_btn:
-            # 复制到剪贴板的JavaScript
-            copy_js = f"""
-            <script>
-            function copyToClipboard() {{
-                const textArea = document.querySelector("textarea[data-testid='stTextArea']");
-                if (textArea) {{
-                    textArea.select();
-                    document.execCommand('copy');
-                    return true;
-                }}
-                return false;
-            }}
+        # 创建复制按钮
+        if st.button("📋 一键复制内容", use_container_width=True):
+            try:
+                # 尝试使用 pyperclip 复制内容
+                import pyperclip
+                pyperclip.copy(st.session_state.generated_content)
+                st.success("内容已复制到剪贴板！")
+            except Exception:
+                # 如果 pyperclip 不可用，使用备用方法
+                try:
+                    # 保存到临时文件
+                    temp_file = "temp_content.txt"
+                    with open(temp_file, "w", encoding="utf-8") as f:
+                        f.write(st.session_state.generated_content)
 
-            if (copyToClipboard()) {{
-                alert('内容已复制到剪贴板！');
-            }} else {{
-                alert('复制失败，请手动选择内容复制');
-            }}
-            </script>
-            """
-            components.html(copy_js, height=0)
+                    # 提供下载链接
+                    with open(temp_file, "rb") as f:
+                        st.download_button(
+                            label="⬇️ 下载内容文件",
+                            data=f,
+                            file_name=f"{platform}_{topic[:20]}.txt",
+                            mime="text/plain"
+                        )
+                    st.info("由于浏览器限制，请下载文件后复制内容")
+                except Exception as e:
+                    st.error(f"复制失败: {str(e)}")
+                    st.info("请手动选择并复制上方内容")
 
     # 添加平台能力说明
     st.divider()
@@ -473,7 +471,6 @@ def main():
                     with st.expander("示例预览"):
                         st.text(config["example"]["output"][:150] + "...")
                 st.markdown("</div>", unsafe_allow_html=True)
-
 
 if __name__ == "__main__":
     import random
