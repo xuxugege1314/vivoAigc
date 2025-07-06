@@ -387,6 +387,9 @@ def main():
         st.write("\n")
         generate_btn = st.button("生成内容", type="primary", use_container_width=True)
 
+    if 'generated_content' not in st.session_state:
+        st.session_state.generated_content = None
+
     # 生成内容
     if generate_btn:
         if not topic.strip():
@@ -411,23 +414,23 @@ def main():
                 # 创建可编辑文本区域
                 edited_content = st.text_area("内容预览", value=content, height=400)
 
-            # 一键复制按钮
             if st.button("📋 一键复制内容", use_container_width=True):
-                # 使用JavaScript实现复制功能
-                js_code = f"""
-                <script>
-                function copyToClipboard() {{
-                    const textArea = document.createElement('textarea');
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(textArea);
-                }}
-                copyToClipboard();
-                </script>
-                """
-                st.components.v1.html(js_code, height=0)
-                st.success("内容已复制到剪贴板！")
+                # 将内容编码为Base64
+                encoded_content = base64.b64encode(
+                    st.session_state.generated_content.encode('utf-8')
+                ).decode('utf-8')
+                # 生成复制链接
+                copy_js = f"""
+                 <a id="copy-link" href="data:text/plain;base64,{encoded_content}" 
+                    download="generated_content.txt" 
+                    style="display:none;"></a>
+                 <script>
+                     document.getElementById('copy-link').click();
+                     alert('内容已复制到剪贴板！');
+                 </script>
+                 """
+                # 渲染JavaScript
+                st.components.v1.html(copy_js, height=0)
     # 添加平台能力说明
     st.divider()
     st.subheader("📚 平台创作能力说明")
