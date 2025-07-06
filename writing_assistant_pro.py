@@ -5,6 +5,7 @@ import re
 import requests
 import streamlit as st
 from dotenv import load_dotenv
+import streamlit.components.v1 as components
 import json
 
 # 加载环境变量
@@ -339,6 +340,13 @@ def main():
     .stTextArea textarea {
         min-height: 300px;
     }
+    .copy-btn {
+        background: linear-gradient(45deg, #00C853 0%, #B2FF59 100%) !important;
+        color: #000 !important;
+        border: none !important;
+        margin-top: 10px;
+        width: 100%;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -403,34 +411,53 @@ def main():
 
             # 显示结果
             st.success(f"生成成功！耗时: {elapsed:.1f}秒")
-            st.subheader(f"🎯 {platform}风格内容预览")
+            st.session_state.generated_content = content
 
-            # 平台特定渲染
-            if platform == "电商文案" and isinstance(content, tuple):
-                st.markdown(content[0])
-                st.markdown("**产品参数**")
-                st.markdown(content[1])
-            else:
-                # 创建可编辑文本区域
-                edited_content = st.text_area("内容预览", value=content, height=400)
+    # 显示生成的内容
+    if st.session_state.generated_content is not None:
+        st.subheader(f"🎯 {platform}风格内容预览")
 
-            if st.button("📋 一键复制内容", use_container_width=True):
-                # 将内容编码为Base64
-                encoded_content = base64.b64encode(
-                    st.session_state.generated_content.encode('utf-8')
-                ).decode('utf-8')
-                # 生成复制链接
-                copy_js = f"""
-                 <a id="copy-link" href="data:text/plain;base64,{encoded_content}" 
-                    download="generated_content.txt" 
-                    style="display:none;"></a>
-                 <script>
-                     document.getElementById('copy-link').click();
-                     alert('内容已复制到剪贴板！');
-                 </script>
-                 """
-                # 渲染JavaScript
-                st.components.v1.html(copy_js, height=0)
+        # 创建文本区域
+        edited_content = st.text_area(
+            "内容预览",
+            value=st.session_state.generated_content,
+            height=400,
+            key="content_area"
+        )
+
+        # 添加复制按钮
+        copy_btn = st.button(
+            "📋 一键复制内容",
+            key="copy_btn",
+            use_container_width=True,
+            help="点击复制内容到剪贴板",
+            type="secondary"
+        )
+
+        # 复制功能实现
+        if copy_btn:
+            # 复制到剪贴板的JavaScript
+            copy_js = f"""
+            <script>
+            function copyToClipboard() {{
+                const textArea = document.querySelector("textarea[data-testid='stTextArea']");
+                if (textArea) {{
+                    textArea.select();
+                    document.execCommand('copy');
+                    return true;
+                }}
+                return false;
+            }}
+
+            if (copyToClipboard()) {{
+                alert('内容已复制到剪贴板！');
+            }} else {{
+                alert('复制失败，请手动选择内容复制');
+            }}
+            </script>
+            """
+            components.html(copy_js, height=0)
+
     # 添加平台能力说明
     st.divider()
     st.subheader("📚 平台创作能力说明")
