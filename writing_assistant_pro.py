@@ -411,32 +411,23 @@ def main():
                 # 创建可编辑文本区域
                 edited_content = st.text_area("内容预览", value=content, height=400)
 
-            # 一键复制功能
+            # 一键复制按钮
             if st.button("📋 一键复制内容", use_container_width=True):
-                # 使用Base64编码避免特殊字符问题
-                encoded_content = base64.b64encode(edited_content.encode('utf-8')).decode('utf-8')
-
-                # JavaScript代码，无需在Python字符串中包含变量
-                js_code = """
+                # 使用JavaScript实现复制功能
+                js_code = f"""
                 <script>
-                function copyContent() {
-                    // 解码Base64内容
-                    const encodedContent = "%s";
-                    const content = atob(encodedContent);
-
-                    // 使用现代复制方法
-                    navigator.clipboard.writeText(content).then(() => {
-                        // 通知复制成功
-                        alert("内容已复制到剪贴板！");
-                    }).catch(err => {
-                        console.error("无法复制内容:", err);
-                    });
-                }
-                copyContent();
+                function copyToClipboard() {{
+                    const textArea = document.createElement('textarea');
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                }}
+                copyToClipboard();
                 </script>
-                """ % encoded_content
-
+                """
                 st.components.v1.html(js_code, height=0)
+                st.success("内容已复制到剪贴板！")
     # 添加平台能力说明
     st.divider()
     st.subheader("📚 平台创作能力说明")
