@@ -403,47 +403,40 @@ def main():
             st.subheader(f"🎯 {platform}风格内容预览")
 
             # 平台特定渲染
-            if platform == "电商文案" and "| 参数 | 值 |" in content:
-                # 提取表格部分
-                table_part = re.search(r"(\|.+\|[\s\S]+?)\n\n", content)
-                if table_part:
-                    table_content = table_part.group(1).strip()
-                    non_table_content = content.replace(table_content, "")
-
-                    st.markdown(non_table_content)
-                    st.markdown("**产品参数**")
-                    st.markdown(table_content)
-                else:
-                    st.text_area("内容预览", content, height=400)
+            if platform == "电商文案" and isinstance(content, tuple):
+                st.markdown(content[0])
+                st.markdown("**产品参数**")
+                st.markdown(content[1])
             else:
-                st.text_area("内容预览", content, height=400)
+                # 创建可编辑文本区域
+                edited_content = st.text_area("内容预览", value=content, height=400)
 
-            # 下载功能
-            st.download_button(
-                label="💾 下载内容",
-                data=content,
-                file_name=f"{platform}_{topic[:20]}.txt",
-                mime="text/plain"
-            )
+            # 一键复制功能
+            if st.button("📋 一键复制内容", use_container_width=True):
+                # 使用Base64编码避免特殊字符问题
+                encoded_content = base64.b64encode(edited_content.encode('utf-8')).decode('utf-8')
 
-            # 反馈与重试
-            col_f1, col_f2, col_f3 = st.columns(3)
-            with col_f1:
-                if st.button("👍 满意", use_container_width=True):
-                    st.success("感谢反馈！已记录您的偏好")
-                    # 实际应用中可记录到数据库
-            with col_f2:
-                if st.button("👎 不满意", use_container_width=True):
-                    st.info("正在尝试重新生成...")
-                    new_content = generate_content(topic, platform, style + " 改进质量")
-                    st.text_area("重新生成", new_content, height=400)
-            with col_f3:
-                if st.button("🔄 换种风格", use_container_width=True):
-                    st.info("尝试不同风格生成...")
-                    new_style = "更加口语化" if "专业" in style else "更加专业化"
-                    new_content = generate_content(topic, platform, new_style)
-                    st.text_area("新风格内容", new_content, height=400)
+                # JavaScript代码，无需在Python字符串中包含变量
+                js_code = """
+                <script>
+                function copyContent() {
+                    // 解码Base64内容
+                    const encodedContent = "%s";
+                    const content = atob(encodedContent);
 
+                    // 使用现代复制方法
+                    navigator.clipboard.writeText(content).then(() => {
+                        // 通知复制成功
+                        alert("内容已复制到剪贴板！");
+                    }).catch(err => {
+                        console.error("无法复制内容:", err);
+                    });
+                }
+                copyContent();
+                </script>
+                """ % encoded_content
+
+                st.components.v1.html(js_code, height=0)
     # 添加平台能力说明
     st.divider()
     st.subheader("📚 平台创作能力说明")
